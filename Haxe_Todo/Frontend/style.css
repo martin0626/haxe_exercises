@@ -43,11 +43,11 @@ html {
     overflow-inline: clip;
 }
 
-.pendingTodo {
+.Pending {
     background-color: rgba(255, 127, 80, 0.596);
 }
 
-.finishedTodo {
+.Completed {
     background-color: rgba(80, 255, 103, 0.281);
 
 }

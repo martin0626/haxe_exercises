@@ -9,27 +9,47 @@ TodoStatus.__constructs__ = [TodoStatus.Completed,TodoStatus.Pending];
 var Main = function() { };
 Main.__name__ = true;
 Main.getAllTodos = function(res) {
-	Main.todos.push({ name : "Marto", status : TodoStatus.Completed});
 	var response = { data : Main.todos, status : "success"};
 	res.writeHead(200,{ "Content-Type" : "application/json"});
 	res.end(JSON.stringify(response));
 };
+Main.createTodo = function(req,res) {
+	var data;
+	req.on("data",function(chunk) {
+		data = JSON.parse(chunk);
+		Main.todos.push(data);
+		console.log("src/Main.hx:46:",Main.todos);
+	});
+	req.on("end",function() {
+		console.log("src/Main.hx:53:",data);
+		res.writeHead(201,{ "Content-Type" : "application/json"});
+		res.end("{\"success\": true}");
+	});
+};
 Main.main = function() {
 	var server = js_node_Http.createServer(function(req,res) {
 		var url = req.url;
-		console.log("src/Main.hx:40:",url);
+		var method = req.method;
+		console.log("src/Main.hx:66:",url);
 		res.setHeader("Access-Control-Allow-Origin","*");
 		res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");
 		res.setHeader("Access-Control-Allow-Headers","Content-Type");
 		if(url == "/todos") {
-			Main.getAllTodos(res);
+			if(method == "GET") {
+				Main.getAllTodos(res);
+			} else if(method == "POST") {
+				Main.createTodo(req,res);
+			} else {
+				res.writeHead(404,{ "Content-Type" : "text/plain"});
+				res.end("Not Found");
+			}
 		} else {
 			res.writeHead(404,{ "Content-Type" : "text/plain"});
 			res.end("Not Found");
 		}
 	});
 	server.listen(3000,function() {
-		console.log("src/Main.hx:58:","Server running at http://localhost:3000/");
+		console.log("src/Main.hx:86:","Server running at http://localhost:3000/");
 	});
 };
 Math.__name__ = true;

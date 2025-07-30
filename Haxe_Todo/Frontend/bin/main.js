@@ -54,6 +54,11 @@ Lambda.exists = function(it,f) {
 	}
 	return false;
 };
+var TodoStatus = $hxEnums["TodoStatus"] = { __ename__:true,__constructs__:null
+	,Completed: {_hx_name:"Completed",_hx_index:0,__enum__:"TodoStatus",toString:$estr}
+	,Pending: {_hx_name:"Pending",_hx_index:1,__enum__:"TodoStatus",toString:$estr}
+};
+TodoStatus.__constructs__ = [TodoStatus.Completed,TodoStatus.Pending];
 var Main = function() { };
 Main.__name__ = true;
 Main.alertMessage = function(message) {
@@ -61,16 +66,18 @@ Main.alertMessage = function(message) {
 };
 Main.handleForm = function(e) {
 	e.preventDefault();
-	TodoCreator.logOnPage();
+	TodoCreator.createOnPage();
 };
 Main.main = function() {
 	var http = new haxe_http_HttpJs("http://localhost:3000/todos");
 	http.onData = function(data) {
-		console.log("src/Main.hx:23:","Response: " + data);
-		console.log("src/Main.hx:24:","Work");
+		Main.todos = JSON.parse(data).data.map(function(todoEl) {
+			return { "name" : todoEl.name, "status" : todoEl.status};
+		});
+		TodoCreator.loadAll(Main.todos);
 	};
 	http.onError = function(error) {
-		console.log("src/Main.hx:28:","Error: " + error);
+		console.log("src/Main.hx:41:","Error: " + error);
 	};
 	http.request();
 	window.document.getElementById("createForm").addEventListener("submit",Main.handleForm);
@@ -123,12 +130,12 @@ TodoCreator.handleAction = function(e) {
 	var parent = e.parentElement;
 	if(e.textContent == "Finish") {
 		e.textContent = "Restart";
-		parent.classList.remove("pendingTodo");
-		parent.classList.add("finishedTodo");
+		parent.classList.remove("Pending");
+		parent.classList.add("Completed");
 	} else {
 		e.textContent = "Finish";
-		parent.classList.remove("finishedTodo");
-		parent.classList.add("pendingTodo");
+		parent.classList.remove("Completed");
+		parent.classList.add("Pending");
 	}
 };
 TodoCreator.getText = function() {
@@ -137,37 +144,66 @@ TodoCreator.getText = function() {
 		TodoCreator.inputElement.value = "";
 		return text;
 	} else {
-		return false;
+		return "";
 	}
 };
-TodoCreator.logOnPage = function() {
+TodoCreator.createOnPage = function(todo) {
 	var element = window.document.createElement("div");
 	element.classList.add("todoEl");
-	element.classList.add("pendingTodo");
 	var todoText = window.document.createElement("p");
 	todoText.classList.add("todoText");
 	var deleteBtn = window.document.createElement("p");
 	deleteBtn.textContent = "Remove";
 	deleteBtn.classList.add("todoBtn");
 	var actionBtn = window.document.createElement("p");
-	actionBtn.textContent = "Finish";
 	actionBtn.classList.add("todoBtn");
-	var text = TodoCreator.getText();
-	if(text) {
-		todoText.textContent = text;
-		deleteBtn.addEventListener("click",function() {
-			TodoCreator.handleDelte(deleteBtn);
-		});
-		actionBtn.addEventListener("click",function() {
-			TodoCreator.handleAction(actionBtn);
-		});
-		TodoCreator.mainElement.appendChild(element);
-		element.appendChild(todoText);
-		element.appendChild(actionBtn);
-		element.appendChild(deleteBtn);
+	var currentText = "";
+	var currentStatus = "Pending";
+	if(todo != null) {
+		currentText = todo.name;
+		currentStatus = todo.status;
 	} else {
-		window.alert("You have to type something!");
+		currentText = TodoCreator.getText();
+		if(currentText == "") {
+			window.alert("You have to type something!");
+			return;
+		}
 	}
+	console.log("src/TodoCreator.hx:77:",todo);
+	todoText.textContent = currentText;
+	element.classList.add(currentStatus);
+	var tmp;
+	switch(currentStatus) {
+	case "Completed":
+		tmp = "Restart";
+		break;
+	case "Pending":
+		tmp = "Finish";
+		break;
+	default:
+		tmp = "Finish";
+	}
+	actionBtn.textContent = tmp;
+	deleteBtn.addEventListener("click",function() {
+		TodoCreator.handleDelte(deleteBtn);
+	});
+	actionBtn.addEventListener("click",function() {
+		TodoCreator.handleAction(actionBtn);
+	});
+	TodoCreator.mainElement.appendChild(element);
+	element.appendChild(todoText);
+	element.appendChild(actionBtn);
+	element.appendChild(deleteBtn);
+};
+TodoCreator.loadAll = function(todos) {
+	var _g = 0;
+	while(_g < todos.length) TodoCreator.createOnPage(todos[_g++]);
+};
+TodoCreator.updateTodoServer = function() {
+};
+TodoCreator.deleteTodoServer = function() {
+};
+TodoCreator.createTodoServer = function() {
 };
 var haxe_Exception = function(message,previous,native) {
 	Error.call(this,message);

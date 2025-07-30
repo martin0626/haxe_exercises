@@ -1,3 +1,4 @@
+import Main.TodoType;
 import js.html.InputElement;
 import haxe.extern.EitherType;
 import js.html.ParagraphElement;
@@ -18,12 +19,12 @@ class TodoCreator {
 
         if(e.textContent == 'Finish'){
             e.textContent = 'Restart';
-            parent.classList.remove('pendingTodo');
-            parent.classList.add('finishedTodo');
+            parent.classList.remove('Pending');
+            parent.classList.add('Completed');
         }else{
             e.textContent = 'Finish';
-            parent.classList.remove('finishedTodo');
-            parent.classList.add('pendingTodo');
+            parent.classList.remove('Completed');
+            parent.classList.add('Pending');
         }
         
     }
@@ -35,15 +36,14 @@ class TodoCreator {
             inputElement.value = '';
             return text;
         }else{
-            return false;
+            return '';
         }
     }
 
-    public static function logOnPage(): Void {
+    public static function createOnPage(todo: TodoType = null): Void {
         //Todo El
         var element = Browser.document.createDivElement();
         element.classList.add('todoEl');
-        element.classList.add('pendingTodo');
 
         //Paragraph
         var todoText = Browser.document.createParagraphElement();
@@ -56,26 +56,62 @@ class TodoCreator {
 
         //Action BTN
         var actionBtn = Browser.document.createParagraphElement();
-        actionBtn.textContent = 'Finish';
+        
         actionBtn.classList.add('todoBtn');
         
+        var currentText = '';
+        var currentStatus = 'Pending';
+        
 
-        var text = getText();
-
-        if(text){
-            todoText.textContent = text;
-
-            //Addding event listeneres
-            deleteBtn.addEventListener('click', ()-> handleDelte(deleteBtn));
-            actionBtn.addEventListener('click', ()->handleAction(actionBtn));
-
-            //Append Elements to the DOM
-            mainElement.appendChild(element);
-            element.appendChild(todoText);
-            element.appendChild(actionBtn);
-            element.appendChild(deleteBtn);
+        if(todo != null){
+            currentText = todo.name;
+            currentStatus = todo.status;
         }else{
-            Browser.alert('You have to type something!');
+            currentText = getText();
+            if(currentText == ''){
+                Browser.alert('You have to type something!');
+                return;
+            }
         }
+
+        trace(todo);
+        //Updating Dynamic values based on Todo
+        todoText.textContent = currentText;
+        element.classList.add(currentStatus);
+        actionBtn.textContent = switch (currentStatus){
+            case 'Pending': 'Finish';
+            case 'Completed': 'Restart';
+            case _: "Finish";
+        };
+
+        //Addding event listeneres
+        deleteBtn.addEventListener('click', ()-> handleDelte(deleteBtn));
+        actionBtn.addEventListener('click', ()->handleAction(actionBtn));
+
+
+        //Append Elements to the DOM
+        mainElement.appendChild(element);
+        element.appendChild(todoText);
+        element.appendChild(actionBtn);
+        element.appendChild(deleteBtn);
+    }
+
+
+    public static function loadAll(todos: Array<TodoType>) {
+        for (todo in todos){
+            createOnPage(todo);
+        }
+    }
+
+    private static function updateTodoServer() {
+        //TODO Finish method
+    }
+
+    private static function deleteTodoServer() {
+        //TODO Finish method
+    }
+
+    private static function createTodoServer() {
+        //TODO Finish method
     }
 }
