@@ -17,42 +17,121 @@ Main.createTodo = function(req,res) {
 	var data;
 	req.on("data",function(chunk) {
 		data = JSON.parse(chunk);
+		data.id = Main.count;
+		Main.count++;
 		Main.todos.push(data);
-		console.log("src/Main.hx:46:",Main.todos);
 	});
 	req.on("end",function() {
-		console.log("src/Main.hx:53:",data);
 		res.writeHead(201,{ "Content-Type" : "application/json"});
 		res.end("{\"success\": true}");
 	});
+};
+Main.updateTodo = function(req,res,id) {
+	var data;
+	req.on("data",function(chunk) {
+		data = JSON.parse(chunk);
+		var _this = Main.todos;
+		var result = new Array(_this.length);
+		var _g = 0;
+		var _g1 = _this.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var todo = _this[i];
+			if(todo.id == id) {
+				todo.status = data.status;
+			}
+			result[i] = todo;
+		}
+		Main.todos = result;
+	});
+	req.on("end",function() {
+		res.writeHead(201,{ "Content-Type" : "application/json"});
+		res.end("{\"success\": true}");
+	});
+};
+Main.deleteTodo = function(res,id) {
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = Main.todos;
+	while(_g1 < _g2.length) {
+		var v = _g2[_g1];
+		++_g1;
+		if(v.id != id) {
+			_g.push(v);
+		}
+	}
+	Main.todos = _g;
+	res.writeHead(200,{ "Content-Type" : "application/json"});
+	res.end("{\"success\": true}");
 };
 Main.main = function() {
 	var server = js_node_Http.createServer(function(req,res) {
 		var url = req.url;
 		var method = req.method;
-		console.log("src/Main.hx:66:",url);
+		console.log("src/Main.hx:96:",url);
 		res.setHeader("Access-Control-Allow-Origin","*");
-		res.setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS");
+		res.setHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
 		res.setHeader("Access-Control-Allow-Headers","Content-Type");
+		if(method == "OPTIONS") {
+			res.writeHead(200);
+			res.end();
+			return;
+		}
+		console.log("src/Main.hx:107:",method);
 		if(url == "/todos") {
 			if(method == "GET") {
 				Main.getAllTodos(res);
 			} else if(method == "POST") {
 				Main.createTodo(req,res);
 			} else {
-				res.writeHead(404,{ "Content-Type" : "text/plain"});
-				res.end("Not Found");
+				var urlStr = url;
+				if(Std.parseInt(urlStr.split("id=")[1]) != null && method == "DELETE") {
+					var currentId = Std.parseInt(urlStr.split("id=")[1]);
+					Main.deleteTodo(res,currentId);
+				} else {
+					var urlStr = url;
+					if(Std.parseInt(urlStr.split("id=")[1]) != null) {
+						console.log("src/Main.hx:121:",method);
+						var currentId = Std.parseInt(urlStr.split("id=")[1]);
+						Main.updateTodo(req,res,currentId);
+					} else {
+						res.writeHead(404,{ "Content-Type" : "text/plain"});
+						res.end("Not Found");
+					}
+				}
 			}
 		} else {
-			res.writeHead(404,{ "Content-Type" : "text/plain"});
-			res.end("Not Found");
+			var urlStr = url;
+			if(Std.parseInt(urlStr.split("id=")[1]) != null && method == "DELETE") {
+				var currentId = Std.parseInt(urlStr.split("id=")[1]);
+				Main.deleteTodo(res,currentId);
+			} else {
+				var urlStr = url;
+				if(Std.parseInt(urlStr.split("id=")[1]) != null) {
+					console.log("src/Main.hx:121:",method);
+					var currentId = Std.parseInt(urlStr.split("id=")[1]);
+					Main.updateTodo(req,res,currentId);
+				} else {
+					res.writeHead(404,{ "Content-Type" : "text/plain"});
+					res.end("Not Found");
+				}
+			}
 		}
 	});
 	server.listen(3000,function() {
-		console.log("src/Main.hx:86:","Server running at http://localhost:3000/");
+		console.log("src/Main.hx:134:","Server running at http://localhost:3000/");
 	});
 };
 Math.__name__ = true;
+var Std = function() { };
+Std.__name__ = true;
+Std.parseInt = function(x) {
+	var v = parseInt(x);
+	if(isNaN(v)) {
+		return null;
+	}
+	return v;
+};
 var haxe_iterators_ArrayIterator = function(array) {
 	this.current = 0;
 	this.array = array;
@@ -191,5 +270,6 @@ String.__name__ = true;
 Array.__name__ = true;
 js_Boot.__toStr = ({ }).toString;
 Main.todos = [];
+Main.count = 0;
 Main.main();
 })({});
