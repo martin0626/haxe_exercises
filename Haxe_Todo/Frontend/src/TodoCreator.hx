@@ -1,3 +1,4 @@
+import js.html.HtmlElement;
 import js.html.XMLHttpRequest;
 import haxe.Json;
 import js.html.InputElement;
@@ -22,31 +23,47 @@ typedef TodoType = {
 
 class TodoCreator {
 
-    private static final mainElement = Browser.document.getElementById('todos');
+    private static final mainElement = Browser.document.getElementById('testSec');
     private static final inputElement: InputElement = cast Browser.document.getElementById('todoInput');
     private static final baseURL = 'http://localhost:3000/';
+    private static final doneTodosElement = Browser.document.getElementById('doneTodosSection');
+    private static final pendingTodosElement = Browser.document.getElementById('pendingTodosSection');
 
 
     private static function handleDelte(e: ParagraphElement) {
         deleteTodoServer(e.parentElement.id);
-        e.parentElement.remove();
+        e.parentElement.classList.add("removeTodo");
+
+        haxe.Timer.delay(() -> {
+            e.parentElement.classList.remove("removeTodo");
+            e.parentElement.remove();
+        }, 500);
     }
 
     private static function handleAction(e: ParagraphElement) {
         var parent = e.parentElement;
         var todoId = parent.id;
-        
-        if(e.textContent == 'Finish'){
-            e.textContent = 'Restart';
-            parent.classList.remove('Pending');
-            parent.classList.add('Completed');
-            updateTodoServer('Completed', todoId);
-        }else{
-            e.textContent = 'Finish';
-            parent.classList.remove('Completed');
-            parent.classList.add('Pending');
-            updateTodoServer('Pending', todoId);
-        }
+
+        parent.classList.add("removeTodo");
+
+        haxe.Timer.delay(() -> {
+            parent.classList.remove("removeTodo");
+            parent.remove();
+
+            if(e.textContent == 'Finish'){
+                e.textContent = 'Restart';
+                parent.classList.remove('Pending');
+                parent.classList.add('Completed');
+                updateTodoServer('Completed', todoId);
+                doneTodosElement.appendChild(parent);
+            }else{
+                e.textContent = 'Finish';
+                parent.classList.remove('Completed');
+                parent.classList.add('Pending');
+                updateTodoServer('Pending', todoId);
+                pendingTodosElement.appendChild(parent);
+            }
+        }, 500);
     }
 
     private static function getText(): EitherType<String, Bool> {
@@ -83,6 +100,7 @@ class TodoCreator {
         element.id = '${todo.id}';
         element.classList.add('todoEl');
 
+
         //Paragraph
         var todoText = Browser.document.createParagraphElement();
         todoText.classList.add('todoText');
@@ -111,10 +129,18 @@ class TodoCreator {
         actionBtn.addEventListener('click', ()->handleAction(actionBtn));
 
         //Append Elements to the DOM
-        mainElement.appendChild(element);
+
+        trace(todo.status);
+        if(todo.status == 'Pending'){
+            pendingTodosElement.appendChild(element);
+        }else{
+            doneTodosElement.appendChild(element);
+        }
+
         element.appendChild(todoText);
         element.appendChild(actionBtn);
         element.appendChild(deleteBtn);
+
     }
 
 
@@ -136,6 +162,8 @@ class TodoCreator {
 		}
 
 		http.request();
+
+
     }
 
     private static function createTodoServer(todo: NewTodoType) {

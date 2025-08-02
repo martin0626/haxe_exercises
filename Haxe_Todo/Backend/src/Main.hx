@@ -20,7 +20,58 @@ class Main {
 
   static var todos: Array<TodoType> = [];
   static var count = 0;
-  
+
+
+  static function main() {
+    
+    // Create HTTP server
+    var server = Http.createServer((req, res) -> serverMain(req, res));
+
+    server.listen(3000, function() {
+      trace("Server running at http://localhost:3000/");
+    });
+  }
+
+
+  static private function serverMain(req:IncomingMessage, res:ServerResponse) {
+    var url = req.url; 
+    var method = req.method;
+    trace(url);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (method == "OPTIONS") {
+        res.writeHead(200);
+        res.end();
+        return;
+    }
+
+    trace(method);
+    // Route: /data
+    switch (url){
+      case "/todos" if (method == 'GET'):
+        getAllTodos(res);
+
+      case "/todos" if (method == "POST"):
+        createTodo(req, res);
+
+      case urlStr if(Std.parseInt(urlStr.split('id=')[1]) != null && method=='DELETE'):
+        var currentId = Std.parseInt(urlStr.split('id=')[1]);
+        deleteTodo(res, currentId);
+
+      case urlStr if(Std.parseInt(urlStr.split('id=')[1]) != null):
+        trace(method);
+        var currentId = Std.parseInt(urlStr.split('id=')[1]);
+        updateTodo(req, res, currentId);
+
+      case _:
+        res.writeHead(404, {
+          "Content-Type": "text/plain"
+        });
+        res.end("Not Found");
+    }
+  }
 
   static function getAllTodos(res: Dynamic) {
 
@@ -86,52 +137,7 @@ class Main {
       res.writeHead(200, {"Content-Type": "application/json"});
       res.end('{"success": true}');
   }
+  
 
-  static function main() {
-    
-    // Create HTTP server
-    var server = Http.createServer(function(req, res) {
-      var url = req.url; 
-      var method = req.method;
-      trace(url);
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-      if (method == "OPTIONS") {
-          res.writeHead(200);
-          res.end();
-          return;
-      }
-
-      trace(method);
-      // Route: /data
-      switch (url){
-        case "/todos" if (method == 'GET'):
-          getAllTodos(res);
-
-        case "/todos" if (method == "POST"):
-          createTodo(req, res);
-
-        case urlStr if(Std.parseInt(urlStr.split('id=')[1]) != null && method=='DELETE'):
-          var currentId = Std.parseInt(urlStr.split('id=')[1]);
-          deleteTodo(res, currentId);
-
-        case urlStr if(Std.parseInt(urlStr.split('id=')[1]) != null):
-          trace(method);
-          var currentId = Std.parseInt(urlStr.split('id=')[1]);
-          updateTodo(req, res, currentId);
-
-        case _:
-          res.writeHead(404, {
-            "Content-Type": "text/plain"
-          });
-          res.end("Not Found");
-      }
-    });
-
-    server.listen(3000, function() {
-      trace("Server running at http://localhost:3000/");
-    });
-  }
+  
 }

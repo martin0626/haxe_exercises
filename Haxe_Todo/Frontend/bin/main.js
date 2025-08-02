@@ -110,22 +110,33 @@ var TodoCreator = function() { };
 TodoCreator.__name__ = true;
 TodoCreator.handleDelte = function(e) {
 	TodoCreator.deleteTodoServer(e.parentElement.id);
-	e.parentElement.remove();
+	e.parentElement.classList.add("removeTodo");
+	haxe_Timer.delay(function() {
+		e.parentElement.classList.remove("removeTodo");
+		e.parentElement.remove();
+	},500);
 };
 TodoCreator.handleAction = function(e) {
 	var parent = e.parentElement;
 	var todoId = parent.id;
-	if(e.textContent == "Finish") {
-		e.textContent = "Restart";
-		parent.classList.remove("Pending");
-		parent.classList.add("Completed");
-		TodoCreator.updateTodoServer("Completed",todoId);
-	} else {
-		e.textContent = "Finish";
-		parent.classList.remove("Completed");
-		parent.classList.add("Pending");
-		TodoCreator.updateTodoServer("Pending",todoId);
-	}
+	parent.classList.add("removeTodo");
+	haxe_Timer.delay(function() {
+		parent.classList.remove("removeTodo");
+		parent.remove();
+		if(e.textContent == "Finish") {
+			e.textContent = "Restart";
+			parent.classList.remove("Pending");
+			parent.classList.add("Completed");
+			TodoCreator.updateTodoServer("Completed",todoId);
+			TodoCreator.doneTodosElement.appendChild(parent);
+		} else {
+			e.textContent = "Finish";
+			parent.classList.remove("Completed");
+			parent.classList.add("Pending");
+			TodoCreator.updateTodoServer("Pending",todoId);
+			TodoCreator.pendingTodosElement.appendChild(parent);
+		}
+	},500);
 };
 TodoCreator.getText = function() {
 	var text = TodoCreator.inputElement.value;
@@ -180,7 +191,12 @@ TodoCreator.createOnPage = function(todo) {
 	actionBtn.addEventListener("click",function() {
 		TodoCreator.handleAction(actionBtn);
 	});
-	TodoCreator.mainElement.appendChild(element);
+	console.log("src/TodoCreator.hx:133:",todo.status);
+	if(todo.status == "Pending") {
+		TodoCreator.pendingTodosElement.appendChild(element);
+	} else {
+		TodoCreator.doneTodosElement.appendChild(element);
+	}
 	element.appendChild(todoText);
 	element.appendChild(actionBtn);
 	element.appendChild(deleteBtn);
@@ -195,7 +211,7 @@ TodoCreator.loadAllTodos = function() {
 		while(_g < loadedTodos.length) TodoCreator.createOnPage(loadedTodos[_g++]);
 	};
 	http.onError = function(error) {
-		console.log("src/TodoCreator.hx:136:","Error: " + error);
+		console.log("src/TodoCreator.hx:161:","Error: " + error);
 	};
 	http.request();
 };
@@ -204,11 +220,11 @@ TodoCreator.createTodoServer = function(todo) {
 	http.setHeader("Content-Type","application/json");
 	http.setPostData(JSON.stringify({ name : todo.name, status : todo.status}));
 	http.onData = function(response) {
-		console.log("src/TodoCreator.hx:155:","Response: " + response);
+		console.log("src/TodoCreator.hx:182:","Response: " + response);
 		TodoCreator.loadAllTodos();
 	};
 	http.onError = function(error) {
-		console.log("src/TodoCreator.hx:160:","Error: " + error);
+		console.log("src/TodoCreator.hx:187:","Error: " + error);
 	};
 	http.request(true);
 };
@@ -217,10 +233,10 @@ TodoCreator.updateTodoServer = function(status,id) {
 	http.setHeader("Content-Type","application/json");
 	http.setPostData(JSON.stringify({ status : status}));
 	http.onData = function(response) {
-		console.log("src/TodoCreator.hx:179:","Response: " + response);
+		console.log("src/TodoCreator.hx:206:","Response: " + response);
 	};
 	http.onError = function(error) {
-		console.log("src/TodoCreator.hx:184:","Error: " + error);
+		console.log("src/TodoCreator.hx:211:","Error: " + error);
 	};
 	http.request(true);
 };
@@ -229,13 +245,13 @@ TodoCreator.deleteTodoServer = function(id) {
 	xhr.open("DELETE","" + TodoCreator.baseURL + "todos/id=" + id,true);
 	xhr.onload = function(_) {
 		if(xhr.status == 200) {
-			console.log("src/TodoCreator.hx:196:","Item deleted: " + xhr.responseText);
+			console.log("src/TodoCreator.hx:223:","Item deleted: " + xhr.responseText);
 		} else {
-			console.log("src/TodoCreator.hx:198:","Failed to delete: " + xhr.status);
+			console.log("src/TodoCreator.hx:225:","Failed to delete: " + xhr.status);
 		}
 	};
 	xhr.onerror = function(_) {
-		console.log("src/TodoCreator.hx:203:","Request failed");
+		console.log("src/TodoCreator.hx:230:","Request failed");
 	};
 	xhr.send();
 };
@@ -274,6 +290,32 @@ haxe_Exception.prototype = $extend(Error.prototype,{
 		return this.__nativeException;
 	}
 });
+var haxe_Timer = function(time_ms) {
+	var me = this;
+	this.id = setInterval(function() {
+		me.run();
+	},time_ms);
+};
+haxe_Timer.__name__ = true;
+haxe_Timer.delay = function(f,time_ms) {
+	var t = new haxe_Timer(time_ms);
+	t.run = function() {
+		t.stop();
+		f();
+	};
+	return t;
+};
+haxe_Timer.prototype = {
+	stop: function() {
+		if(this.id == null) {
+			return;
+		}
+		clearInterval(this.id);
+		this.id = null;
+	}
+	,run: function() {
+	}
+};
 var haxe_ValueException = function(value,previous,native) {
 	haxe_Exception.call(this,String(value),previous,native);
 	this.value = value;
@@ -690,8 +732,10 @@ if( String.fromCodePoint == null ) String.fromCodePoint = function(c) { return c
 String.__name__ = true;
 Array.__name__ = true;
 js_Boot.__toStr = ({ }).toString;
-TodoCreator.mainElement = window.document.getElementById("todos");
+TodoCreator.mainElement = window.document.getElementById("testSec");
 TodoCreator.inputElement = window.document.getElementById("todoInput");
 TodoCreator.baseURL = "http://localhost:3000/";
+TodoCreator.doneTodosElement = window.document.getElementById("doneTodosSection");
+TodoCreator.pendingTodosElement = window.document.getElementById("pendingTodosSection");
 Main.main();
 })(typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);
